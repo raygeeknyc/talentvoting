@@ -2,12 +2,13 @@ from abc import ABC, abstractmethod
 from talentvoting.common.acts import Act, Acts
 
 class VoteIngester(ABC):
+    def __init__(self):
+        pass
+    
     @abstractmethod
-    def cast(self, act):
+    def _getActs() ->Acts:
         pass
 
-    def getActs(self) ->Acts:
-        return self._acts
-    
-    def __init__(self):
-        self._acts : Acts = []
+    @abstractmethod
+    def cast(self, act:Act) ->any:
+        pass
