@@ -9,3 +9,13 @@ class IneligibleVote(object):
             {"user": str(self.__user)},
             {"act": str(self.__act)}
         ]
+    
+class InvalidUser(object):
+    def __init__(self, user):
+        self.__user = user
+
+    def response(self) ->any:
+        return [
+            {"error": "Not logged in user"},
+            {"user": str(self.__user)}
+        ]

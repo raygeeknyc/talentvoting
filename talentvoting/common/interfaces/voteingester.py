@@ -10,5 +10,5 @@ class VoteIngester(ABC):
         pass
 
     @abstractmethod
-    def cast(self, act:Act) ->any:
+    def cast(self, user, act:Act) ->any:
         pass
