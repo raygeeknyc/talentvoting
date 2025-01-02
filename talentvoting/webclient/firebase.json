@@ -5,7 +5,12 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-    ]
+    ],
+    "rewrites": [{
+      "source": "/login",
+      "destination": "/login.html",
+      "type": 301
+    }]
   },
   "emulators": {
     "auth": {
