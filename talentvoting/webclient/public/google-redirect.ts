@@ -8,7 +8,7 @@ import {
   signInWithRedirect,
   signOut,
 } from 'firebase/auth';
-import { firebaseConfig } from 'auth/config.ts';
+import { firebaseConfig } from './config.ts';
 
 //alert("imports done ");
 
