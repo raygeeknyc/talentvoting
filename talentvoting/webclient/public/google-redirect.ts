@@ -10,6 +10,8 @@ import {
 } from 'firebase/auth';
 import { firebaseConfig } from './config';
 
+alert("imported in google-redirects.ts");
+
 initializeApp(firebaseConfig);
 
 const auth = getAuth();
