@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-# For now an Act is a JSON object with no stricter definition
+# For now an Act is a JSON object with no stricter definition enforced
 Act = Dict[str, any]
 
 # Any number of Acts are often referenced as a group
