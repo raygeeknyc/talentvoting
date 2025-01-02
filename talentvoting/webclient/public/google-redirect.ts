@@ -1,3 +1,5 @@
+alert("in google-redirects.ts");
+
 import { initializeApp } from 'firebase/app';
 import {
   GoogleAuthProvider,
@@ -10,7 +12,7 @@ import {
 } from 'firebase/auth';
 import { firebaseConfig } from './config';
 
-alert("imported in google-redirects.ts");
+alert("imports done ");
 
 initializeApp(firebaseConfig);
 
