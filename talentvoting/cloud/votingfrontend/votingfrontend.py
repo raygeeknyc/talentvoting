@@ -3,6 +3,24 @@ from talentvoting.common.policy.votingpolicyengine import VotingPolicyEngine
 from talentvoting.common.interfaces.voteingester import VoteIngester
 from talentvoting.common.interfaces.responses import IneligibleVote, InvalidUser
 
+import firebase_admin
+from firebase_admin import credentials, auth
+
+cred = credentials.Certificate('/private/serviceAccountKey.json')
+firebase_admin.initialize_app(cred)
+
+@app_route('/api/verify', methods=['POST'])
+def verify_token():
+    id_token = request.form['idToken']
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        # Get user information from the decoded token
+        uid = decoded_token['uid']
+        # Do something with the user information
+        return jsonify({'success': True, 'uid': uid})
+    except auth.InvalidIdTokenError:
+        return jsonify({'success': False, 'error': 'Invalid ID token'})    
+
 class VotingFrontEnd(VoteIngester):
     @staticmethod
     def _isLoggedInUser(user) ->bool:
