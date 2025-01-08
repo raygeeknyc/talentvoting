@@ -6,10 +6,13 @@ from talentvoting.common.interfaces.responses import IneligibleVote, InvalidUser
 import firebase_admin
 from firebase_admin import credentials, auth
 
+from flask import Flask, request, jsonify
+app = Flask(__name__)
+
 cred = credentials.Certificate('/private/serviceAccountKey.json')
 firebase_admin.initialize_app(cred)
 
-@app_route('/api/verify', methods=['POST'])
+@app.route('/api/verify', methods=['POST'])
 def verify_token():
     id_token = request.form['idToken']
     try:
