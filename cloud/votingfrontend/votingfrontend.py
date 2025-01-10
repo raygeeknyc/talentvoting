@@ -12,6 +12,12 @@ app = Flask(__name__)
 cred = credentials.Certificate('/private/serviceAccountKey.json')
 firebase_admin.initialize_app(cred)
 
+
+@app.route('/')
+def root():
+    return "<html><body>voting front end service</body></html>"
+
+
 @app.route('/api/verify', methods=['POST'])
 def verify_token():
     id_token = request.form['idToken']
