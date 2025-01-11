@@ -1,1 +1,3 @@
 talentvoting/webclient/public/config.ts
+talentvoting/webclient/private/**
+**/serviceAccountKey.json

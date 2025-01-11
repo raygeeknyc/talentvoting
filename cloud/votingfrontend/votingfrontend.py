@@ -9,7 +9,7 @@ from firebase_admin import credentials, auth
 from flask import Flask, request, jsonify
 app = Flask(__name__)
 
-cred = credentials.Certificate('/private/serviceAccountKey.json')
+cred = credentials.Certificate('private/serviceAccountKey.json')
 firebase_admin.initialize_app(cred)
 
 
