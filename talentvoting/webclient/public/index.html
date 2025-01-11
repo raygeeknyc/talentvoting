@@ -9,8 +9,8 @@
         <script  src="/__/firebase/11.1.0/firebase-auth-compat.js"></script>
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script type="module">
-          import { firebaseAuthIdentifier } from './config.js';
-          window.firebaseAuthIdentifier = firebaseAuthIdentifier;
+          import { firebaseConfig } from './config.js';
+          window.firebaseAuthIdentifier = firebaseConfig;
         </script>
       </head>
     <body>
@@ -22,9 +22,13 @@
             Username: <p id="userName"></p>
             <button id="logout">Logout</button>
             <br/>
-            <hr/>
-            <button id="vote">Vote</button>
-          </section>
+            <form id="castVoteForm" action="https://votingforthestars.ue.r.appspot.com/api/verify"
+              method="post">
+              <hr/>
+              <input id="idToken"/>
+              <input id="voteButton" type="button" value="Cast vote"/>              
+          </form>
+        </section>
           <section id="signed-out">
             <h2>You are signed out</h2>
             <button id="login">Login</button>
@@ -82,6 +86,8 @@
                 console.log(user.email);
                 user.getIdToken().then((idToken) => {
                   console.log(idToken);
+                  document.getElementById("idToken").value=idToken;
+                  //sendIdTokenToServer(idToken);
                 });
                 console.log(new Date(). getTime()); 
              } else {
@@ -89,14 +95,33 @@
                 console.log(new Date(). getTime()); 
              }
             });
+
+            // Not used as it we are sending the token in the request body
+           function sendIdTokenToServer(idToken) {
+             fetch('https://votingforthestars.ue.r.appspot.com/', {
+               method: 'POST',
+               headers: {
+                 'Content-Type': 'application/json'
+               },
+               body: JSON.stringify({ idToken })
+             })
+             .then(response => response.json())
+             .then(data => {
+               console.log(data);
+             })
+             .catch(error => {
+               console.error('Error sending ID token:', error);
+             });
+           }
          </script>
          <script>
           function vote() {
             console.log("Cast vote");
-            console.log(new Date(). getTime()); 
+            console.log(new Date(). getTime());
+            document.getElementById('castVoteForm').submit(); 
           }
 
-           $('#vote').click(() => vote());
+           $('#voteButton').click(() => vote());
          </script>
     </body>
 </html>
