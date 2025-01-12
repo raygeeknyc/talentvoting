@@ -22,11 +22,11 @@
             Username: <p id="userName"></p>
             <button id="logout">Logout</button>
             <br/>
-            <form id="castVoteForm" action="https://votingforthestars.ue.r.appspot.com/api/verify"
+            <form id="castVoteForm" action="https://votingforthestars.ue.r.appspot.com/"
               method="post">
               <hr/>
-              <input id="idToken"/>
-              <input id="voteButton" type="button" value="Cast vote"/>              
+              <input id="idToken" type="hidden" name="idToken" />
+              <input type="button" id="voteButton" name="voteButton" value="Cast vote" />              
           </form>
         </section>
           <section id="signed-out">
@@ -121,7 +121,7 @@
             document.getElementById('castVoteForm').submit(); 
           }
 
-           $('#voteButton').click(() => vote());
+          $('#voteButton').click(() => vote());
          </script>
     </body>
 </html>
