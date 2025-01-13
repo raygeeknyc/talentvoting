@@ -1,13 +1,16 @@
 from talentvoting.common.acts import Act, Acts
 from talentvoting.common.policy.votingpolicyengine import VotingPolicyEngine
 from talentvoting.common.interfaces.voteingester import VoteIngester
-from talentvoting.common.interfaces.responses import IneligibleVote, InvalidUser
+from talentvoting.common.interfaces.responses import IneligibleVote, InvalidUser, InvalidLogin
 
 import firebase_admin
 from firebase_admin import credentials, auth
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
+
 app = Flask(__name__)
+
+from werkzeug.exceptions import BadRequestKeyError
 
 import sys
 
@@ -20,19 +23,29 @@ def root():
      print(str(request.form), file=sys.stderr)
      return "<html><body>voting front end service</body></html>"
 
+def logError(e:Exception, payload:str):
+     print("Error: {}, Data: {}".format(str(e.__class__), str(payload)), file=sys.stderr)
 
-@app.route('/api/verify', methods=['POST'])
-def verify_token():
-     print(str(request.form), file=sys.stderr)
-     id_token = request.form['idToken']
+@app.route('/vote', methods=['POST'])
+def vote():
+     form = request.form
+     uid = "unknown"
      try:
+         id_token = request.form['idTokenz']
+
          decoded_token = auth.verify_id_token(id_token)
          # Get user information from the decoded token
          uid = decoded_token['uid']
          # Do something with the user information
          return jsonify({'success': True, 'uid': uid})
+
+     except BadRequestKeyError as e:
+         logError(e, 'idToken')
+         return  InvalidLogin("none").response()
+
      except auth.InvalidIdTokenError:
-         return jsonify({'success': False, 'error': 'Invalid ID token'})    
+         logError(e, uid)
+         return  InvalidLogin(str(uid).response())
 
 class VotingFrontEnd(VoteIngester):
      @staticmethod
