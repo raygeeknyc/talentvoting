@@ -22,11 +22,18 @@
             Username: <p id="userName"></p>
             <button id="logout">Logout</button>
             <br/>
-            <form id="castVoteForm" action="https://votingforthestars.ue.r.appspot.com/getActs"
+            <form id="actsForm"
               method="post">
               <hr/>
+              <input type="button" id="actsButton" name="actsButton" value="Get Acts" formaction="https://votingforthestars.ue.r.appspot.com/getActs" />              
+              <table align="center" id="actsTable" border="1">
+                <TR>
+                  <TH>Name</TH>
+                  <TH>--</TH>
+                </TR>
+              </table>
               <input id="idToken" type="hidden" name="idToken" />
-              <input type="button" id="voteButton" name="voteButton" value="Cast vote" />              
+              <input type="button" id="voteButton" name="voteButton" value="Cast vote" formaction="https://votingforthestars.ue.r.appspot.com/vote" disabled/>              
           </form>
         </section>
           <section id="signed-out">
@@ -94,27 +101,10 @@
                 console.log(new Date(). getTime()); 
              }
             });
-
-            // Not used as it we are sending the token in the request body
-           function sendIdTokenToServer(idToken) {
-             fetch('https://votingforthestars.ue.r.appspot.com/', {
-               method: 'POST',
-               headers: {
-                 'Content-Type': 'application/json'
-               },
-               body: JSON.stringify({ idToken })
-             })
-             .then(response => response.json())
-             .then(data => {
-               console.log(data);
-             })
-             .catch(error => {
-               console.error('Error sending ID token:', error);
-             });
-           }
  
-           function getResponse(form) {
-            fetch(form.action, {
+           function getResponse(form, url, callback) {
+            console.log(url);
+            fetch(url, {
               method: form.method,
               body: new FormData(form)
             })
@@ -122,7 +112,8 @@
                if(response.ok) {  
                  response.json() 
                    .then(function(response) {
-                      console.log(response)
+                      console.log('response: ', new Date(). getTime(), ' ', response);
+                      callback(response);
                   });
                  }
                else {
@@ -134,12 +125,31 @@
               });
           }
  
-           function vote() {
-            console.log("Cast vote");
-            console.log(new Date(). getTime());
-            getResponse(document.getElementById('castVoteForm')); 
-          }
+           function setActs(responseJson) {
+            console.log("setActs", new Date(), responseJson);
+            // Traversing the JSON data
+            let acts = responseJson['acts'];
+            console.log("data has ", acts.length, " rows");
+            const actsTable = document.getElementById('actsTable');
+            for (let rowIdx = 0; rowIdx < acts.length; rowIdx++) {
+               console.log('Row: ', rowIdx, ' is "', acts[rowIdx]['name'], '"');
+               let actRow = actsTable.insertRow(-1)
+               actRow.insertCell(0).innerHTML = 'X';
+               actRow.insertCell(0).innerHTML = acts[rowIdx]['name'];
+            }
+           }
 
+           function vote() {
+            console.log("Cast vote", new Date(). getTime());
+             getResponse(document.getElementById('actsForm'), document.getElementById('voteButton').getAttribute('formaction')); 
+           }
+
+           function getActs() {
+            console.log("Get Acts", new Date(). getTime());
+            getResponse(document.getElementById('actsForm'), document.getElementById('actsButton').getAttribute('formaction'), setActs);
+           }
+
+          $('#actsButton').click(() => getActs());
           $('#voteButton').click(() => vote());
          </script>
     </body>
