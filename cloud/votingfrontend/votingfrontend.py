@@ -2,6 +2,7 @@ from talentvoting.common.acts import Act, Acts
 from talentvoting.common.policy.votingpolicyengine import VotingPolicyEngine
 from talentvoting.common.interfaces.voteingester import VoteIngester
 from talentvoting.common.interfaces.responses import FrontendError, IneligibleVote, InvalidUser, InvalidLogin, MalformedRequest
+from talentvoting.common.interfaces.servicelocations import VOTE_WEB_CLIENT_DOMAIN
 
 import firebase_admin
 from firebase_admin import credentials, auth
@@ -24,6 +25,10 @@ _policy_engine = VotingPolicyEngine()
 def log(e:Exception, payload:str):
      print("Message: {}, Data: {}".format(str(e.__class__) + ":" + str(e), str(payload)), file=sys.stderr)
   
+def _fixResponseHeaders(response):
+    response.headers['Access-Control-Allow-Origin'] = VOTE_WEB_CLIENT_DOMAIN
+    response.headers['Content-Type'] = 'text/json'
+
 def _isLoggedInUser(user) ->bool:
      if user:
          return True
@@ -86,8 +91,7 @@ def getEligibleActs() ->any:
         
          log(acts, "getActs()")
          response = make_response(acts, 200)
-         response.headers['Access-Control-Allow-Origin'] = 'votingforthestars.web.app'
-         response.headers['Content-Type'] = 'text/json'
+         _fixResponseHeaders(response)
          print(str(response), file=sys.stderr)
          return response
      
@@ -96,7 +100,6 @@ def getEligibleActs() ->any:
          error = json.dumps(error)
          log(error, "error:getActs()")
          response = make_response(error, e.response()[1])
-         response.headers['Access-Control-Allow-Origin'] = 'votingforthestars.web.app'
-         response.headers['Content-Type'] = 'text/json'
+         _fixResponseHeaders(response)
          print(str(response), file=sys.stderr)
          return response
