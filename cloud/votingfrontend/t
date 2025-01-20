@@ -1,0 +1,6 @@
+acts  =  list(        
+  [{"season": 1, "act": "S01A001", "name": "Crazy good rock", "voting_eligible": True},
+  {"season": 1, "act": "S01A002", "name": "Serious Wizardry", "voting_eligible": True},
+  {"season": 1, "act": "S01A004", "name": "Acrobatic comedy", "voting_eligible": False}]
+  )
+ 

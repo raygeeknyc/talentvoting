@@ -1,12 +1,14 @@
 from talentvoting.common.acts import Act, Acts
 from talentvoting.common.policy.votingpolicyengine import VotingPolicyEngine
 from talentvoting.common.interfaces.voteingester import VoteIngester
-from talentvoting.common.interfaces.responses import IneligibleVote, InvalidUser, InvalidLogin
+from talentvoting.common.interfaces.responses import FrontendError, IneligibleVote, InvalidUser, InvalidLogin, MalformedRequest
 
 import firebase_admin
 from firebase_admin import credentials, auth
 
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, make_response
+
+import json
 
 app = Flask(__name__)
 
@@ -17,72 +19,84 @@ import sys
 cred = credentials.Certificate('private/serviceAccountKey.json')
 firebase_admin.initialize_app(cred)
 
+_policy_engine = VotingPolicyEngine()
 
+def log(e:Exception, payload:str):
+     print("Message: {}, Data: {}".format(str(e.__class__) + ":" + str(e), str(payload)), file=sys.stderr)
+  
+def _isLoggedInUser(user) ->bool:
+     if user:
+         return True
+     else:
+         return False
+    
+def _getActs() ->Acts:
+     return _policy_engine.getAllActs()
+ 
+def validateUser(form) -> str:
+     uid = None
+     id_token = None
+     try:
+         id_token = form['idToken']
+ 
+         decoded_token = auth.verify_id_token(id_token)
+         # Get user information from the decoded token
+         uid = decoded_token['uid']
+         # Do something with the user information
+         log({'success': True, 'uid': uid},"validateUser()")
+
+         if not _isLoggedInUser(uid):
+             raise  InvalidUser(uid)
+
+         return uid
+
+     except BadRequestKeyError:
+         raise MalformedRequest("idToken")
+
+     except InvalidUser as e:
+         raise e
+     
+     except auth.InvalidIdTokenError:
+         raise InvalidLogin(str(id_token))
+     
 @app.route('/', methods=['POST','GET'])
 def root():
-     print(str(request.form), file=sys.stderr)
+     log(str(request.form), "root" )
      return "<html><body>voting front end service</body></html>"
-
-def logError(e:Exception, payload:str):
-     print("Error: {}, Data: {}".format(str(e.__class__), str(payload)), file=sys.stderr)
 
 @app.route('/vote', methods=['POST'])
 def vote():
      form = request.form
      uid = "unknown"
+     pass
+
+@app.route('/getActs', methods=['POST'])
+def getEligibleActs() ->any:
      try:
-         id_token = request.form['idTokenz']
+         form = request.form
+         uid = validateUser(form)
 
-         decoded_token = auth.verify_id_token(id_token)
-         # Get user information from the decoded token
-         uid = decoded_token['uid']
-         # Do something with the user information
-         return jsonify({'success': True, 'uid': uid})
-
-     except BadRequestKeyError as e:
-         logError(e, 'idToken')
-         return  InvalidLogin("none").response()
-
-     except auth.InvalidIdTokenError:
-         logError(e, uid)
-         return  InvalidLogin(str(uid).response())
-
-class VotingFrontEnd(VoteIngester):
-     @staticmethod
-     def _isLoggedInUser(user) ->bool:
-         if user:
-             return True
-         else:
-             return False
-    
-     def __init__(self):
-         super().__init__()
-         self._policy_engine = VotingPolicyEngine()
-    
-     def _getActs(self) ->Acts:
-         return self._policy_engine.getAllActs()
-   
-     def getAllActs(self, requesting_user) ->any:
-         if not self._isLoggedInUser(requesting_user):
-             return  InvalidUser(requesting_user).response()
-
-         return self._getActs()
-    
-     def cast(self, requesting_user, act:Act) ->any:
-         if not self._isLoggedInUser(requesting_user):
-             return  InvalidUser(requesting_user).response()
-
-         if not self._policy_engine.isEligibleVote(requesting_user, act):
-             return IneligibleVote(requesting_user, act).response()
-    
-     def getEligibleActs(self, requesting_user) ->Acts:
-         if not self._isLoggedInUser(requesting_user):
-             return  InvalidUser(requesting_user).response()
-
-         candidate_acts = self._getActs()
+         candidate_acts = _getActs()
          eligible_acts = []
          for act in candidate_acts:
              if act["voting_eligible"]:
                  eligible_acts.append(act)
+         acts = {"acts" : eligible_acts}
+         acts = json.dumps(acts)
         
-         return eligible_acts 
+         log(acts, "getActs()")
+         response = make_response(acts, 200)
+         response.headers['Access-Control-Allow-Origin'] = 'votingforthestars.web.app'
+         response.headers['Content-Type'] = 'text/json'
+         print(str(response), file=sys.stderr)
+         return response
+     
+     except FrontendError as e:
+         error = {"error" : str(e.response()[0])}    
+         error = json.dumps(error)
+         log(error, "error:getActs()")
+         response = make_response(error, e.response()[1])
+         response.headers['Access-Control-Allow-Origin'] = 'votingforthestars.web.app'
+         response.headers['Content-Type'] = 'text/json'
+         print(str(response), file=sys.stderr)
+         return response

@@ -22,7 +22,7 @@
             Username: <p id="userName"></p>
             <button id="logout">Logout</button>
             <br/>
-            <form id="castVoteForm" action="https://votingforthestars.ue.r.appspot.com/vote"
+            <form id="castVoteForm" action="https://votingforthestars.ue.r.appspot.com/getActs"
               method="post">
               <hr/>
               <input id="idToken" type="hidden" name="idToken" />
@@ -87,7 +87,6 @@
                 user.getIdToken().then((idToken) => {
                   console.log(idToken);
                   document.getElementById("idToken").value=idToken;
-                  //sendIdTokenToServer(idToken);
                 });
                 console.log(new Date(). getTime()); 
              } else {
@@ -113,12 +112,32 @@
                console.error('Error sending ID token:', error);
              });
            }
-         </script>
-         <script>
-          function vote() {
+ 
+           function getResponse(form) {
+            fetch(form.action, {
+              method: form.method,
+              body: new FormData(form)
+            })
+            .then(function (response){ 
+               if(response.ok) {  
+                 response.json() 
+                   .then(function(response) {
+                      console.log(response)
+                  });
+                 }
+               else {
+                 throw Error('Something went wrong');
+               }
+             })
+             .catch(function(error) {
+               console.log(error);
+              });
+          }
+ 
+           function vote() {
             console.log("Cast vote");
             console.log(new Date(). getTime());
-            document.getElementById('castVoteForm').submit(); 
+            getResponse(document.getElementById('castVoteForm')); 
           }
 
           $('#voteButton').click(() => vote());
