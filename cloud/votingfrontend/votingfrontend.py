@@ -72,8 +72,22 @@ def root():
 @app.route('/vote', methods=['POST'])
 def vote():
      form = request.form
-     uid = "unknown"
-     pass
+     try:
+         actId = form['votedAct']
+         response = json.dumps({'act':  actId})
+         response = make_response(response, 200)
+         _fixResponseHeaders(response)
+         print(str(response.get_data()), file=sys.stderr)
+         return response
+     except BadRequestKeyError:
+         error = {"error" : str(MalformedRequest("votedAct").response()[0])}    
+         error = json.dumps(error)
+         log(error, "error:vote()")
+         response = make_response(error, error.response()[1])
+         _fixResponseHeaders(response)
+         print(str(response.get_data()), file=sys.stderr)
+         return response
+
 
 @app.route('/getActs', methods=['POST'])
 def getEligibleActs() ->any:
@@ -92,7 +106,7 @@ def getEligibleActs() ->any:
          log(acts, "getActs()")
          response = make_response(acts, 200)
          _fixResponseHeaders(response)
-         print(str(response), file=sys.stderr)
+         print(str(response.get_data()), file=sys.stderr)
          return response
      
      except FrontendError as e:
@@ -101,5 +115,5 @@ def getEligibleActs() ->any:
          log(error, "error:getActs()")
          response = make_response(error, e.response()[1])
          _fixResponseHeaders(response)
-         print(str(response), file=sys.stderr)
+         print(str(response.get_data()), file=sys.stderr)
          return response

@@ -25,6 +25,7 @@
             <form id="actsForm"
               method="post">
               <hr/>
+              <input type="hidden" id="votedAct" name="votedAct" />
               <input type="button" id="actsButton" name="actsButton" value="Get Acts" formaction="https://votingforthestars.ue.r.appspot.com/getActs" />              
               <table align="center" id="actsTable" border="1">
                 <TR>
@@ -33,7 +34,6 @@
                 </TR>
               </table>
               <input id="idToken" type="hidden" name="idToken" />
-              <input type="button" id="voteButton" name="voteButton" value="Cast vote" formaction="https://votingforthestars.ue.r.appspot.com/vote" disabled/>              
           </form>
         </section>
           <section id="signed-out">
@@ -125,6 +125,11 @@
               });
           }
  
+          function checkVote(responseJson) {
+            console.log("checkVote", new Date(), responseJson);
+            // Traversing the JSON data
+           }
+
            function setActs(responseJson) {
             console.log("setActs", new Date(), responseJson);
             // Traversing the JSON data
@@ -134,14 +139,19 @@
             for (let rowIdx = 0; rowIdx < acts.length; rowIdx++) {
                console.log('Row: ', rowIdx, ' is "', acts[rowIdx]['name'], '"');
                let actRow = actsTable.insertRow(-1)
-               actRow.insertCell(0).innerHTML = 'X';
+               let voteButton = document.createElement("button");
+               voteButton.id = 'voteButton'
+               voteButton.textContent = 'Vote';
+               voteButton.addEventListener('click', function(){vote(acts[rowIdx]['act'])});         
+               actRow.insertCell(0).appendChild(voteButton);
                actRow.insertCell(0).innerHTML = acts[rowIdx]['name'];
             }
            }
 
-           function vote() {
-            console.log("Cast vote", new Date(). getTime());
-             getResponse(document.getElementById('actsForm'), document.getElementById('voteButton').getAttribute('formaction')); 
+           function vote(actId) {
+             console.log("Cast vote", new Date(). getTime(), " act '", actId, "'");
+             document.getElementById('votedAct').value = actId;
+             getResponse(document.getElementById('actsForm'), 'https://votingforthestars.ue.r.appspot.com/vote', checkVote); 
            }
 
            function getActs() {
@@ -150,7 +160,6 @@
            }
 
           $('#actsButton').click(() => getActs());
-          $('#voteButton').click(() => vote());
          </script>
     </body>
 </html>
