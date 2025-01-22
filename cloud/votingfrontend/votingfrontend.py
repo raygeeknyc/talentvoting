@@ -97,10 +97,10 @@ def getEligibleActs() ->any:
 
          candidate_acts = _getActs()
          eligible_acts = []
-         for act in candidate_acts:
-             if act["voting_eligible"]:
-                 eligible_acts.append(act)
-         acts = {"acts" : eligible_acts}
+ #        for act in candidate_acts:
+ #           if act["voting_eligible"]:
+ #                eligible_acts.append(act)
+         acts = {"acts" : candidate_acts}  # was eligible_acts
          acts = json.dumps(acts)
         
          log(acts, "getActs()")

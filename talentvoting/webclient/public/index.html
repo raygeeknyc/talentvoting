@@ -28,10 +28,11 @@
               <input type="hidden" id="votedAct" name="votedAct" />
               <input type="button" id="actsButton" name="actsButton" value="Get Acts" formaction="https://votingforthestars.ue.r.appspot.com/getActs" />              
               <table align="center" id="actsTable" border="1">
-                <TR>
-                  <TH>Name</TH>
-                  <TH>--</TH>
-                </TR>
+                <thead>
+                  <TR><TH>Name</TH><TH>--</TH></TR>
+                </thead>
+                <tbody name="tbody"/>
+                </tbody>
               </table>
               <input id="idToken" type="hidden" name="idToken" />
           </form>
@@ -135,16 +136,24 @@
             // Traversing the JSON data
             let acts = responseJson['acts'];
             console.log("data has ", acts.length, " rows");
+            var newTBody = document.createElement('tbody');
+            newTBody.name = 'tbody';
             const actsTable = document.getElementById('actsTable');
+            const tBody = actsTable.getElementsByTagName('tbody')[0];
+            tBody.replaceWith(newTBody);
             for (let rowIdx = 0; rowIdx < acts.length; rowIdx++) {
                console.log('Row: ', rowIdx, ' is "', acts[rowIdx]['name'], '"');
-               let actRow = actsTable.insertRow(-1)
-               let voteButton = document.createElement("button");
-               voteButton.id = 'voteButton'
-               voteButton.textContent = 'Vote';
-               voteButton.addEventListener('click', function(){vote(acts[rowIdx]['act'])});         
-               actRow.insertCell(0).appendChild(voteButton);
+               let actRow = newTBody.insertRow(-1)
                actRow.insertCell(0).innerHTML = acts[rowIdx]['name'];
+               if (acts[rowIdx]['voting_eligible']) {
+                 let voteButton = document.createElement("button");
+                 voteButton.id = 'voteButton'
+                 voteButton.textContent = 'Vote';
+                 voteButton.addEventListener('click', function(){vote(acts[rowIdx]['act'])});         
+                 actRow.insertCell(1).appendChild(voteButton);
+               } else {
+                actRow.insertCell(1).innerHTML = '--';
+               }
             }
            }
 
