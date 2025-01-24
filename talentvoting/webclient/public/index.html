@@ -15,8 +15,8 @@
       </head>
     <body>
          <h1>Login page</h1>
-        <div class="container">
-          <section id="signed-in">
+         <div class="container">
+           <section id="signed-in">
             <h2>You are logged in</h2>
             Application: <p id="application"></p>
             Username: <p id="userName"></p>
@@ -45,24 +45,6 @@
 
         <script type="module">
           import { initFirebaseAuth, googleLogin, logout } from './firebase-auth.js';
-
-          try {
-               initAuth(window.firebaseAuthIdentifier);
-          } catch (err) {
-            console.log(err);
-          }
-
-          function setView(showView) {
-            const views = [ '#signed-in', '#signed-out', '#no-config' ]
-            views.forEach(view => {
-              if (view === showView) {
-                $(view).show();
-              } else {
-                $(view).hide();
-              }
-            })
-          }
-
           const initAuth = (settings) => {
             try {
               console.debug(settings);
@@ -83,6 +65,24 @@
               $('#error').text(err.message).show();
             }
           }
+
+          try {
+               initAuth(window.firebaseAuthIdentifier);
+          } catch (err) {
+            console.log(err);
+          }
+
+          function setView(showView) {
+            const views = [ '#signed-in', '#signed-out', '#no-config' ]
+            views.forEach(view => {
+              if (view === showView) {
+                $(view).show();
+              } else {
+                $(view).hide();
+              }
+            })
+          }
+
 
           $('#login').click(() => googleLogin());
           $('#logout').click(() => logout());
@@ -147,6 +147,7 @@
                  let voteButton = document.createElement("button");
                  voteButton.id = 'voteButton'
                  voteButton.textContent = 'Vote';
+                 voteButton.className = 'voteButton';
                  voteButton.type = 'button';
                  voteButton.addEventListener('click', function(){vote(acts[rowIdx]['act'])});         
                  actRow.insertCell(1).appendChild(voteButton);
@@ -156,7 +157,7 @@
             }
            }
 
-           function resetActs() {
+           function resetActsTable() {
              var newTBody = document.createElement('tbody');
              newTBody.name = 'tbody';
              const actsTable = document.getElementById('actsTable');
@@ -172,7 +173,7 @@
 
            function getActs() {
             console.log("Get Acts", new Date(). getTime());
-            resetActs()
+            resetActsTable()
             getResponse(document.getElementById('actsForm'), document.getElementById('actsButton').getAttribute('formaction'), setActs);
            }
 
