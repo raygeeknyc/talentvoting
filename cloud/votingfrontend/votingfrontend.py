@@ -74,10 +74,13 @@ def vote():
      form = request.form
      try:
          actId = form['votedAct']
-         response = json.dumps({'act':  actId})
-         response = make_response(response, 200)
+         act = {"act":  actId}
+         act = json.dumps(act)
+         log(act, "vote()")
+         response = make_response(act, 200)
          _fixResponseHeaders(response)
-         print(str(response.get_data()), file=sys.stderr)
+         log(str(response.get_data()), 'response data')
+         log(str(response.headers), 'response headers')
          return response
      except BadRequestKeyError:
          error = {"error" : str(MalformedRequest("votedAct").response()[0])}    
@@ -85,7 +88,8 @@ def vote():
          log(error, "error:vote()")
          response = make_response(error, error.response()[1])
          _fixResponseHeaders(response)
-         print(str(response.get_data()), file=sys.stderr)
+         log(str(response.get_data()), 'error response data')
+         log(str(response.headers), 'response headers')
          return response
 
 
@@ -96,17 +100,14 @@ def getEligibleActs() ->any:
          uid = validateUser(form)
 
          candidate_acts = _getActs()
-         eligible_acts = []
- #        for act in candidate_acts:
- #           if act["voting_eligible"]:
- #                eligible_acts.append(act)
          acts = {"acts" : candidate_acts}  # was eligible_acts
          acts = json.dumps(acts)
         
          log(acts, "getActs()")
          response = make_response(acts, 200)
          _fixResponseHeaders(response)
-         print(str(response.get_data()), file=sys.stderr)
+         log(str(response.get_data()), 'response data')
+         log(str(response.headers), 'response headers')
          return response
      
      except FrontendError as e:
@@ -115,5 +116,6 @@ def getEligibleActs() ->any:
          log(error, "error:getActs()")
          response = make_response(error, e.response()[1])
          _fixResponseHeaders(response)
-         print(str(response.get_data()), file=sys.stderr)
+         log(str(response.get_data()), 'error response data')
+         log(str(response.headers), 'response headers')
          return response

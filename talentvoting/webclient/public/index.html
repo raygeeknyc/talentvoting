@@ -46,6 +46,12 @@
         <script type="module">
           import { initFirebaseAuth, googleLogin, logout } from './firebase-auth.js';
 
+          try {
+               initAuth(window.firebaseAuthIdentifier);
+          } catch (err) {
+            console.log(err);
+          }
+
           function setView(showView) {
             const views = [ '#signed-in', '#signed-out', '#no-config' ]
             views.forEach(view => {
@@ -76,12 +82,6 @@
               console.log(err);
               $('#error').text(err.message).show();
             }
-          }
-
-          try {
-               initAuth(window.firebaseAuthIdentifier);
-          } catch (err) {
-            console.log(err);
           }
 
           $('#login').click(() => googleLogin());
@@ -118,6 +118,7 @@
                   });
                  }
                else {
+                 console.log('HTTP-Error: ' + response.status);
                  throw Error('Something went wrong');
                }
              })
@@ -128,7 +129,8 @@
  
           function checkVote(responseJson) {
             console.log("checkVote", new Date(), responseJson);
-            // Traversing the JSON data
+            const act = responseJson['act'];
+            alert('you voted for ' + act + '!')
            }
 
            function setActs(responseJson) {
@@ -136,19 +138,16 @@
             // Traversing the JSON data
             let acts = responseJson['acts'];
             console.log("data has ", acts.length, " rows");
-            var newTBody = document.createElement('tbody');
-            newTBody.name = 'tbody';
-            const actsTable = document.getElementById('actsTable');
             const tBody = actsTable.getElementsByTagName('tbody')[0];
-            tBody.replaceWith(newTBody);
             for (let rowIdx = 0; rowIdx < acts.length; rowIdx++) {
                console.log('Row: ', rowIdx, ' is "', acts[rowIdx]['name'], '"');
-               let actRow = newTBody.insertRow(-1)
+               let actRow = tBody.insertRow(-1)
                actRow.insertCell(0).innerHTML = acts[rowIdx]['name'];
                if (acts[rowIdx]['voting_eligible']) {
                  let voteButton = document.createElement("button");
                  voteButton.id = 'voteButton'
                  voteButton.textContent = 'Vote';
+                 voteButton.type = 'button';
                  voteButton.addEventListener('click', function(){vote(acts[rowIdx]['act'])});         
                  actRow.insertCell(1).appendChild(voteButton);
                } else {
@@ -157,6 +156,14 @@
             }
            }
 
+           function resetActs() {
+             var newTBody = document.createElement('tbody');
+             newTBody.name = 'tbody';
+             const actsTable = document.getElementById('actsTable');
+             const tBody = actsTable.getElementsByTagName('tbody')[0];
+             tBody.replaceWith(newTBody);
+           }
+            
            function vote(actId) {
              console.log("Cast vote", new Date(). getTime(), " act '", actId, "'");
              document.getElementById('votedAct').value = actId;
@@ -165,6 +172,7 @@
 
            function getActs() {
             console.log("Get Acts", new Date(). getTime());
+            resetActs()
             getResponse(document.getElementById('actsForm'), document.getElementById('actsButton').getAttribute('formaction'), setActs);
            }
 
