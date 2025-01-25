@@ -30,7 +30,7 @@
               method="post">
               <hr/>
               <input type="hidden" id="votedAct" name="votedAct" />
-              <input type="button" id="actsButton" name="actsButton" value="Get Acts" formaction="https://votingforthestars.ue.r.appspot.com/getActs" />              
+              <input type="button" id="actsButton" name="actsButton" value="Get Acts" />              
               <table align="center" id="actsTable" border="1">
                 <thead>
                   <TR><TH>Name</TH><TH>--</TH></TR>
@@ -52,6 +52,7 @@
 
         <script type="module">
           import { initFirebaseAuth, googleLogin, logout } from './firebase-auth.js';
+          import { getActsURL, voteURL} from './config.js';
 
            // Show either the logged in section or the logged out section
            function setView(showView) {
@@ -94,7 +95,7 @@
           }
 
           // With everything setup, listen for clicks on the login and logout buttons
-          $('#login').click(() => googleLogin());
+          $('#login').click(() => googleLogin(loginErrorCallback));
           $('#logout').click(() => logout());
 
           // Listen for the auth state to change and store the user info on the document
@@ -192,14 +193,18 @@
            function vote(actId) {
              console.log("Cast vote", new Date(). getTime(), " act '", actId, "'");
              document.getElementById('votedAct').value = actId;
-             getResponse(document.getElementById('actsForm'), 'https://votingforthestars.ue.r.appspot.com/vote', checkVote); 
+             getResponse(document.getElementById('actsForm'), voteURL, checkVote); 
            }
 
            // Handle a GetActs button click
            function getActs() {
             console.log("Get Acts", new Date(). getTime());
             resetActsTable()
-            getResponse(document.getElementById('actsForm'), document.getElementById('actsButton').getAttribute('formaction'), setActs);
+            getResponse(document.getElementById('actsForm'), getActsURL, setActs);
+           }
+
+           function loginErrorCallback() {
+            console.error('error logging in');
            }
 
            // Listen for clicks on the Get Acts button 
