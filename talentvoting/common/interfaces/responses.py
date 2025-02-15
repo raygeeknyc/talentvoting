@@ -47,3 +47,14 @@ class MalformedRequest(FrontendError):
     def response(self) ->any:
      return ("error:Missing or invalid request parameters. name:{}".format(self.__name),
      400)
+    
+
+class VoteCastError(FrontendError):
+    def __init__(self, act):
+        self.__act = act
+
+    def response(self) ->any:
+                   
+     return ("error:vote not recorded. "+
+         "act:{}".format(str(self.__act)),
+     500)     

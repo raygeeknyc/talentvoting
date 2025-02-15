@@ -1,29 +1,34 @@
+import json
+import sys
+
 from talentvoting.common.acts import Act, Acts
 from talentvoting.common.policy.votingpolicyengine import VotingPolicyEngine
 from talentvoting.common.interfaces.voteingester import VoteIngester
-from talentvoting.common.interfaces.responses import FrontendError, IneligibleVote, InvalidUser, InvalidLogin, MalformedRequest
-from talentvoting.common.interfaces.servicelocations import VOTE_WEB_CLIENT_DOMAIN
+from talentvoting.common.interfaces.responses import FrontendError, IneligibleVote, InvalidUser, InvalidLogin, MalformedRequest, VoteCastError
+from talentvoting.common.interfaces.servicelocations import VOTE_WEB_CLIENT_DOMAIN, VOTE_QUEUE_TOPIC, PROJECT_ID
 
 import firebase_admin
 from firebase_admin import credentials, auth
+from google.cloud import pubsub_v1
 
 from flask import Flask, request, jsonify, Response, make_response
-
-import json
-
-app = Flask(__name__)
-
 from werkzeug.exceptions import BadRequestKeyError
 
-import sys
+app = Flask(__name__)
 
 cred = credentials.Certificate('private/serviceAccountKey.json')
 firebase_admin.initialize_app(cred)
 
 _policy_engine = VotingPolicyEngine()
+publisher = pubsub_v1.PublisherClient()
+# Create a path to the votes topic
+topic_path = publisher.topic_path(PROJECT_ID, VOTE_QUEUE_TOPIC )
 
-def log(e:Exception, payload:str):
-     print("Message: {}, Data: {}".format(str(e.__class__) + ":" + str(e), str(payload)), file=sys.stderr)
+def log(message:str):
+     print(message, file=sys.stderr)
+  
+def logError(e:Exception, payload:str):
+     print("Error: {}, Data: {}".format(str(e.__class__) + ":" + str(e), str(payload)), file=sys.stderr)
   
 def _fixResponseHeaders(response):
     response.headers['Access-Control-Allow-Origin'] = VOTE_WEB_CLIENT_DOMAIN
@@ -38,7 +43,7 @@ def _isLoggedInUser(user) ->bool:
 def _getActs() ->Acts:
      return _policy_engine.getAllActs()
  
-def validateUser(form) -> str:
+def __validateUser(form) -> str:
      uid = None
      id_token = None
      try:
@@ -48,7 +53,7 @@ def validateUser(form) -> str:
          # Get user information from the decoded token
          uid = decoded_token['uid']
          # Do something with the user information
-         log({'success': True, 'uid': uid},"validateUser()")
+         log("validateUser({})".format(uid))
 
          if not _isLoggedInUser(uid):
              raise  InvalidUser(uid)
@@ -64,32 +69,57 @@ def validateUser(form) -> str:
      except auth.InvalidIdTokenError:
          raise InvalidLogin(str(id_token))
      
+def _recordVote(act:Act) ->any:
+     try:
+         print("_recordVote({})".format(act), file=sys.stderr)
+         # Data must be a bytestring
+         message_data = act.encode("utf-8")
+         future = publisher.publish(topic_path, message_data)
+         _ = future.result()
+
+     except Exception as e:
+         logError(e, "_recordVote()")
+         raise VoteCastError(str(act))
+
 @app.route('/', methods=['POST','GET'])
 def root():
-     log(str(request.form), "root" )
+     log("root {}".format(request.method))
      return "<html><body>voting front end service</body></html>"
 
 @app.route('/vote', methods=['POST'])
 def vote():
      form = request.form
+     uid = __validateUser(form)
+
      try:
          actId = form['votedAct']
-         act = {"act":  actId}
-         act = json.dumps(act)
-         log(act, "vote()")
-         response = make_response(act, 200)
+         vote = {"user": uid, "act": actId}
+         vote = json.dumps(vote)
+         log("vote({}".format(vote))
+         _recordVote(vote)
+         response = make_response(vote, 200)
          _fixResponseHeaders(response)
-         log(str(response.get_data()), 'response data')
-         log(str(response.headers), 'response headers')
+         log("response data: {}".format(str(response.get_data())))
+         log("response headers: {}".format(str(response.headers)))
          return response
      except BadRequestKeyError:
          error = {"error" : str(MalformedRequest("votedAct").response()[0])}    
          error = json.dumps(error)
-         log(error, "error:vote()")
+         logError(error, "error:vote()")
          response = make_response(error, error.response()[1])
          _fixResponseHeaders(response)
-         log(str(response.get_data()), 'error response data')
-         log(str(response.headers), 'response headers')
+         log("response data: {}".format(str(response.get_data())))
+         log("response headers: {}".format(str(response.headers)))
+         return response
+     
+     except FrontendError as e:
+         error = {"error" : str(e.response()[0])}    
+         error = json.dumps(error)
+         logError(error, "error:vote()")
+         response = make_response(error, e.response()[1])
+         _fixResponseHeaders(response)
+         log("response data: {}".format(str(response.get_data())))
+         log("response headers: {}".format(str(response.headers)))
          return response
 
 
@@ -97,25 +127,25 @@ def vote():
 def getEligibleActs() ->any:
      try:
          form = request.form
-         uid = validateUser(form)
+         uid = __validateUser(form)
 
          candidate_acts = _getActs()
          acts = {"acts" : candidate_acts}  # was eligible_acts
          acts = json.dumps(acts)
         
-         log(acts, "getActs()")
+         log("getActs({})".format(acts))
          response = make_response(acts, 200)
          _fixResponseHeaders(response)
-         log(str(response.get_data()), 'response data')
-         log(str(response.headers), 'response headers')
+         log("response data: {}".format(str(response.get_data())))
+         log("response headers: {}".format(str(response.headers)))
          return response
      
      except FrontendError as e:
          error = {"error" : str(e.response()[0])}    
          error = json.dumps(error)
-         log(error, "error:getActs()")
+         logError(error, "error:getActs()")
          response = make_response(error, e.response()[1])
          _fixResponseHeaders(response)
-         log(str(response.get_data()), 'error response data')
-         log(str(response.headers), 'response headers')
+         log("response data: {}".format(str(response.get_data())))
+         log("response headers: {}".format(str(response.headers)))
          return response
