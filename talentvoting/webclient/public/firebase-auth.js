@@ -37,6 +37,9 @@ function handleAuthError(error, onError) {
 
 function googleLogin(onError) {
   var provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({
+    prompt: 'select_account',
+  });
   firebase.auth().signInWithPopup(provider).then(() => {}, (error) => handleAuthError(error, onError));
 }
 

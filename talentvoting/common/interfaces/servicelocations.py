@@ -1,4 +1,6 @@
-VOTE_INGESTOR_ADDRESS = "https://votingforthestars.ue.r.appspot.com/vote"
+_VOTE_INGESTOR_ADDRESS = "https://votingforthestars.ue.r.appspot.com"
+VOTE_URL = _VOTE_INGESTOR_ADDRESS + "/vote"
+GETACTS_URL = _VOTE_INGESTOR_ADDRESS + "/getacts"
 VOTE_PROCESSOR_ADDRESS = "https://votingforthestars.run.app/processor"
 VOTE_QUEUE_TOPIC = "votes"
 VOTE_WEB_CLIENT_DOMAIN =  "https://votingforthestars.web.app"

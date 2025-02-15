@@ -6,12 +6,6 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**/config.js",
-        "destination": "/404.html"
-      }
     ]
   },
   "emulators": {
