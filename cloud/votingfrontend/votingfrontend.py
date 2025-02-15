@@ -71,8 +71,8 @@ def __validateUser(form) -> str:
      
 def _recordVote(act:Act) ->any:
      try:
-         print("_recordVote({})".format(act), file=sys.stderr)
-         # Data must be a bytestring
+         log("_recordVote({})".format(act))
+         # Message data must be a bytestring
          message_data = act.encode("utf-8")
          future = publisher.publish(topic_path, message_data)
          _ = future.result()
