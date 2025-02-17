@@ -1,16 +1,45 @@
-import os
-
-from flask import Flask
-
+import json
+from flask import Flask, request
 app = Flask(__name__)
 
 
-@app.route("/")
-def hello_world():
-    """Example Hello World route."""
-    name = os.environ.get("NAME", "World")
-    return f"Hello {name}!"
+def _processVote(message:json) -> bool:
+    """
+    Process a JSON message containing a vote.
+    args:
+        message: A JSON dict
+    Returns:
+        True if a message was processed, False otherwise
+    """
+    if not message:
+        return False
+    if not isinstance(message, dict):
+        return False
+    if "user" not in message or "act" not in message:
+        return False
+    return True
 
 
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+
+@app.route("/", methods=["POST"])
+def index():
+    """Receive a Pub/Sub message which should contain valid JSON and issue HTTP response."""
+    message = request.data
+   
+    print("incoming message!")
+    if message:
+        print("data: {}".format(message))
+    try:
+        vote = json.loads(message)
+        if _processVote(vote):
+            print("Processed vote: {}".format(vote))
+        else:
+            print("Invalid vote: {}".format(vote))
+            return ("Invalid vote", 400)  # Invalid content error status  
+    except ValueError as e:
+        print("Invalid JSON received: {}".format(e))
+        return ("Invalid JSON", 400)
+    except Exception as e:
+        print("error: {}".format(e))
+        return ("", 500)  # Internal server error status
+    return ("", 204)  # No content OK status
