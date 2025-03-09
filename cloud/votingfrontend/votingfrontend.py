@@ -1,11 +1,13 @@
 import json
 import sys
+from typing import List, Tuple
 
-from talentvoting.common.acts import Act, Acts
-from talentvoting.common.policy.votingpolicyengine import VotingPolicyEngine
+from talentvoting.common.acts import Act, Acts, parseAct
+from talentvoting.common.policy.votingpolicyengine import DefaultPolicyEngine
 from talentvoting.common.interfaces.voteingester import VoteIngester
 from talentvoting.common.interfaces.responses import FrontendError, IneligibleVote, InvalidUser, InvalidLogin, MalformedRequest, VoteCastError
 from talentvoting.common.interfaces.servicelocations import VOTE_WEB_CLIENT_DOMAIN, VOTE_QUEUE_TOPIC, PROJECT_ID
+from talentvoting.cloud.common.votingdatabaseutils import get_database
 
 import firebase_admin
 from firebase_admin import credentials, auth
@@ -19,7 +21,6 @@ app = Flask(__name__)
 cred = credentials.Certificate('private/serviceAccountKey.json')
 firebase_admin.initialize_app(cred)
 
-_policy_engine = VotingPolicyEngine()
 publisher = pubsub_v1.PublisherClient()
 # Create a path to the votes topic
 topic_path = publisher.topic_path(PROJECT_ID, VOTE_QUEUE_TOPIC )
@@ -39,9 +40,34 @@ def _isLoggedInUser(user) ->bool:
          return True
      else:
          return False
-    
-def _getActs() ->Acts:
-     return _policy_engine.getAllActs()
+
+def __getUserVoteHistory(db_connection, user_id:str, round_id:int)->Tuple[int,List[str]]:
+    result_rows = db_connection.execute_sql(
+        "SELECT Total_votes_cast, voted_acts from Votebudget "+
+        "WHERE Userid = '{}' and Round_id = {}".format(user_id, round_id)
+    )
+    result = result_rows.one_or_none()
+    if result:
+        log("votebudget(total,history):{} [1]:{}".format(result[0], result[1]))
+    if result:
+        prev_total = result[0]
+        prev_votes = result[1]
+
+    return (prev_total, prev_votes)
+
+def _getActs(vote_history:List[str]) ->Acts:
+     "Return the current JSON map of acts, each marked as eligible or not eligible for voting."
+     acts = DefaultPolicyEngine.getAllActs()
+     for act in acts:
+         round_id, act_number = parseAct(act["act"])
+         log("checking round,act: {},{}".format(round_id, act_number))
+         if DefaultPolicyEngine.isEligibleVote(round_id, act_number, vote_history):
+             log("voting_eligible")
+             act["voting_eligible"] = True
+         else:
+             log("not voting_eligible")
+             act["voting_eligible"] = False
+     return acts
  
 def __validateUser(form) -> str:
      uid = None
@@ -128,9 +154,12 @@ def getEligibleActs() ->any:
      try:
          form = request.form
          uid = __validateUser(form)
+         round_id = DefaultPolicyEngine.getCurrentRoundId()
+         with get_database().snapshot() as db_connection:
+             _, vote_history = __getUserVoteHistory(db_connection, uid, round_id)
+         candidate_acts = _getActs(vote_history)
 
-         candidate_acts = _getActs()
-         acts = {"acts" : candidate_acts}  # was eligible_acts
+         acts = {"acts" : candidate_acts}
          acts = json.dumps(acts)
         
          log("getActs({})".format(acts))

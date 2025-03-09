@@ -2,3 +2,4 @@ Flask==3.0.3
 gunicorn
 firebase_admin
 google-cloud-pubsub
+google-cloud-spanner
