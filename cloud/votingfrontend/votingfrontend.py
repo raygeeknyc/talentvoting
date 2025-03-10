@@ -3,7 +3,7 @@ import sys
 from typing import List, Tuple
 
 from talentvoting.common.acts import Act, Acts, parseAct
-from talentvoting.common.policy.votingpolicyengine import DefaultPolicyEngine
+from talentvoting.common.policy.votingpolicyengine import DefaultPolicyEngine, MAX_VOTES_PER_ROUND
 from talentvoting.common.interfaces.voteingester import VoteIngester
 from talentvoting.common.interfaces.responses import FrontendError, IneligibleVote, InvalidUser, InvalidLogin, MalformedRequest, VoteCastError
 from talentvoting.common.interfaces.servicelocations import VOTE_WEB_CLIENT_DOMAIN, VOTE_QUEUE_TOPIC, PROJECT_ID
@@ -162,7 +162,7 @@ def getEligibleActs() ->any:
 
          log("fetched_vote_history: {}".format(fetched_vote_history))
 
-         acts_bundle = {"acts_bundle" : {"acts" : candidate_acts, "vote_history" : fetched_vote_history}}
+         acts_bundle = {"acts_bundle" : {"acts" : candidate_acts, "vote_history" : fetched_vote_history, "vote_limit": MAX_VOTES_PER_ROUND}}
          acts_bundle = json.dumps(acts_bundle)
 
          log("getActs({})".format((acts_bundle)))

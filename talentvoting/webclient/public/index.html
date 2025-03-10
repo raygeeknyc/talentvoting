@@ -17,7 +17,9 @@
         </script>
       </head>
     <body>
-         <h1>Login page</h1>
+      <input type="hidden" id="voteLimit" name="voteLimit" />
+      <input type="hidden" id="voteTally" name="voteTally" />
+      <h1>Login page</h1>
          <div class="container">
           <!-- We show one of two sections at any time - depending on the current user's login status -->
            <section id="signed-in">
@@ -150,6 +152,7 @@
             console.log("checkVote", new Date(), responseJson);
             const act = responseJson['act'];
             alert('you voted for ' + act + '!')
+            updateActs(act);
            }
 
            // Handle the response from a remote "getActs" call
@@ -162,9 +165,25 @@
             let bundle = responseJson['acts_bundle'];
             let acts = bundle['acts'];
             let vote_history = bundle['vote_history'];
+            let vote_limit = bundle['vote_limit'];
+            const actsTable = document.getElementById('actsTable');
             console.log("acts data has ", acts.length, " rows");
             console.log("acts data is ", acts);
             console.log("history data is ", vote_history);
+            console.log("history has ", vote_history.length, " elements");
+            console.log("vote_limit data is ", vote_limit);
+            document.getElementById('voteLimit').value = vote_limit;
+
+            // Count all 'Y' votes in vote_history and store that as our current tally of votes cast
+            let vote_tally = 0;
+            for (let voteIdx = 0; voteIdx < vote_history.length; voteIdx++) {
+              if (vote_history[voteIdx] == 'Y') {
+                console.log('tallied vote ', voteIdx)
+                vote_tally = vote_tally+1;
+              }
+            }
+            document.getElementById('voteTally').value = vote_tally;
+
             const tBody = actsTable.getElementsByTagName('tbody')[0];
             for (let rowIdx = 0; rowIdx < acts.length; rowIdx++) {
                console.log('Row: ', rowIdx, ' is "', acts[rowIdx]['name'], '"');
@@ -179,10 +198,43 @@
                  voteButton.addEventListener('click', function(){vote(acts[rowIdx]['act'])});         
                  actRow.insertCell(1).appendChild(voteButton);
                } else {
-                actRow.insertCell(1).innerHTML = '--';
+                 actRow.insertCell(1).innerHTML = '--';
                }
-            }
+               // Add the actId to the first column
+               const hiddenInput = document.createElement("input");
+               hiddenInput.type = "hidden";
+               hiddenInput.name = "act_id";
+               hiddenInput.value = acts[rowIdx]['act'];
+               actRow.cells[0].appendChild(hiddenInput);
+             }
            }
+
+           // If we have reached the limit on votes, disable all vote buttons.
+           // After a vote has been cast, it is not eligible for another vote
+           // Update the eligibility of each act in the acts table, based on the limit
+           // This duplicates knowledge in the Python policy engine, kept local for performance
+           function updateActs(voted_act) {
+             let voted_count = parseInt(document.getElementById('voteTally').value);
+             voted_count = voted_count + 1;
+             document.getElementById('voteTally').value = voted_count;
+             let vote_limit = document.getElementById('voteLimit').value;
+             const actsTable = document.getElementById('actsTable');
+             const rows = actsTable.rows
+             for (let i = 0; i < rows.length; i++) {
+               const row = rows[i];
+               console.log('row is ', row);
+               if (i > 0) {  // The first row is a TH
+                 const rowActId = row.cells[0].children[0].value;
+                 console.log(row.cells[0].textContent,'=',rowActId)
+                 if (rowActId == voted_act || voted_count >= vote_limit) {
+                  row.cells[1].innerHTML = '';  // Removes all children
+                  row.cells[1].innerHTML = '--';
+                  
+                }
+               }
+              }
+           }
+
 
            // Remove any old acts from the table and setup a new, empty table body
            function resetActsTable() {
