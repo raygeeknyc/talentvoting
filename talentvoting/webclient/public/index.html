@@ -159,8 +159,11 @@
            function setActs(responseJson) {
             console.log("setActs", new Date(), responseJson);
             // Traversing the JSON data
-            let acts = responseJson['acts'];
-            console.log("data has ", acts.length, " rows");
+            let bundle = responseJson['acts_bundle'];
+            let acts = bundle['acts'];
+            let vote_history = bundle['vote_history'];
+            console.log("acts data has ", acts.length, " rows");
+            console.log("history data is ", vote_history);
             const tBody = actsTable.getElementsByTagName('tbody')[0];
             for (let rowIdx = 0; rowIdx < acts.length; rowIdx++) {
                console.log('Row: ', rowIdx, ' is "', acts[rowIdx]['name'], '"');

@@ -154,16 +154,23 @@ def getEligibleActs() ->any:
      try:
          form = request.form
          uid = __validateUser(form)
+         vote_history = []
          round_id = DefaultPolicyEngine.getCurrentRoundId()
          with get_database().snapshot() as db_connection:
-             _, vote_history = __getUserVoteHistory(db_connection, uid, round_id)
-         candidate_acts = _getActs(vote_history)
+             _, fetched_vote_history = __getUserVoteHistory(db_connection, uid, round_id)
+         candidate_acts = _getActs(fetched_vote_history)
 
          acts = {"acts" : candidate_acts}
          acts = json.dumps(acts)
-        
-         log("getActs({})".format(acts))
-         response = make_response(acts, 200)
+
+         vote_history = json.dumps(fetched_vote_history)
+         log("vote_history: {}".format(vote_history))
+
+         acts_bundle = {"acts_bundle" : {"acts" : candidate_acts, "vote_history" : vote_history}}
+         acts_bundle = json.dumps(acts_bundle)
+
+         log("getActs({})".format((acts_bundle)))
+         response = make_response(acts_bundle, 200)
          _fixResponseHeaders(response)
          log("response data: {}".format(str(response.get_data())))
          log("response headers: {}".format(str(response.headers)))
