@@ -160,13 +160,9 @@ def getEligibleActs() ->any:
              _, fetched_vote_history = __getUserVoteHistory(db_connection, uid, round_id)
          candidate_acts = _getActs(fetched_vote_history)
 
-         acts = {"acts" : candidate_acts}
-         acts = json.dumps(acts)
+         log("fetched_vote_history: {}".format(fetched_vote_history))
 
-         vote_history = json.dumps(fetched_vote_history)
-         log("vote_history: {}".format(vote_history))
-
-         acts_bundle = {"acts_bundle" : {"acts" : candidate_acts, "vote_history" : vote_history}}
+         acts_bundle = {"acts_bundle" : {"acts" : candidate_acts, "vote_history" : fetched_vote_history}}
          acts_bundle = json.dumps(acts_bundle)
 
          log("getActs({})".format((acts_bundle)))
