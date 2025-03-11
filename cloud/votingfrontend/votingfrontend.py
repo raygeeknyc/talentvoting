@@ -3,9 +3,9 @@ import sys
 from typing import List, Tuple
 
 from talentvoting.common.acts import Act, Acts, parseAct
-from talentvoting.common.policy.votingpolicyengine import DefaultPolicyEngine, MAX_VOTES_PER_ROUND
+from talentvoting.common.policy.votingpolicyengine import DefaultPolicyEngine
 from talentvoting.common.interfaces.voteingester import VoteIngester
-from talentvoting.common.interfaces.responses import FrontendError, IneligibleVote, InvalidUser, InvalidLogin, MalformedRequest, VoteCastError
+from talentvoting.common.interfaces.responses import FrontendError, IneligibleVote, InvalidUser, InvalidLogin, MalformedRequest, VoteCastError, VoteHistoryError
 from talentvoting.common.interfaces.servicelocations import VOTE_WEB_CLIENT_DOMAIN, VOTE_QUEUE_TOPIC, PROJECT_ID
 from talentvoting.cloud.common.votingdatabaseutils import get_database
 
@@ -32,16 +32,19 @@ def logError(e:Exception, payload:str):
      print("Error: {}, Data: {}".format(str(e.__class__) + ":" + str(e), str(payload)), file=sys.stderr)
   
 def _fixResponseHeaders(response):
+    "Add needed headers to the response."
     response.headers['Access-Control-Allow-Origin'] = VOTE_WEB_CLIENT_DOMAIN
     response.headers['Content-Type'] = 'text/json'
 
-def _isLoggedInUser(user) ->bool:
+def _isUserLoggedIn(user) ->bool:
+     "If the user is defined, we assume it to be a valid logged in user."
      if user:
          return True
      else:
          return False
 
 def __getUserVoteHistory(db_connection, user_id:str, round_id:int)->Tuple[int,List[str]]:
+    "Return the array of voting history for this user in this round."
     result_rows = db_connection.execute_sql(
         "SELECT Total_votes_cast, voted_acts from Votebudget "+
         "WHERE Userid = '{}' and Round_id = {}".format(user_id, round_id)
@@ -49,9 +52,10 @@ def __getUserVoteHistory(db_connection, user_id:str, round_id:int)->Tuple[int,Li
     result = result_rows.one_or_none()
     if result:
         log("votebudget(total,history):{} [1]:{}".format(result[0], result[1]))
-    if result:
         prev_total = result[0]
         prev_votes = result[1]
+    else:
+        return (None, None)
 
     return (prev_total, prev_votes)
 
@@ -70,39 +74,35 @@ def _getActs(vote_history:List[str]) ->Acts:
      return acts
  
 def __validateUser(form) -> str:
+     "Extract the uid from the id_token in the request."
      uid = None
      id_token = None
      try:
          id_token = form['idToken']
  
-         decoded_token = auth.verify_id_token(id_token)
          # Get user information from the decoded token
+         decoded_token = auth.verify_id_token(id_token)
          uid = decoded_token['uid']
-         # Do something with the user information
-         log("validateUser({})".format(uid))
 
-         if not _isLoggedInUser(uid):
+         if not _isUserLoggedIn(uid):
              raise  InvalidUser(uid)
 
          return uid
-
      except BadRequestKeyError:
          raise MalformedRequest("idToken")
-
      except InvalidUser as e:
          raise e
-     
      except auth.InvalidIdTokenError:
          raise InvalidLogin(str(id_token))
      
 def _recordVote(act:Act) ->any:
+     "Publish the vote to the Pub/Sub topic."
      try:
          log("_recordVote({})".format(act))
          # Message data must be a bytestring
          message_data = act.encode("utf-8")
          future = publisher.publish(topic_path, message_data)
          _ = future.result()
-
      except Exception as e:
          logError(e, "_recordVote()")
          raise VoteCastError(str(act))
@@ -114,6 +114,7 @@ def root():
 
 @app.route('/vote', methods=['POST'])
 def vote():
+     "Request handler for vote endpoint."
      form = request.form
      uid = __validateUser(form)
 
@@ -137,7 +138,6 @@ def vote():
          log("response data: {}".format(str(response.get_data())))
          log("response headers: {}".format(str(response.headers)))
          return response
-     
      except FrontendError as e:
          error = {"error" : str(e.response()[0])}    
          error = json.dumps(error)
@@ -151,6 +151,7 @@ def vote():
 
 @app.route('/getActs', methods=['POST'])
 def getEligibleActs() ->any:
+     "Request handler for getActs endpoint."
      try:
          form = request.form
          uid = __validateUser(form)
@@ -158,11 +159,13 @@ def getEligibleActs() ->any:
          round_id = DefaultPolicyEngine.getCurrentRoundId()
          with get_database().snapshot() as db_connection:
              _, fetched_vote_history = __getUserVoteHistory(db_connection, uid, round_id)
+         if fetched_vote_history == None:
+             raise VoteHistoryError(uid, round_id)
          candidate_acts = _getActs(fetched_vote_history)
 
          log("fetched_vote_history: {}".format(fetched_vote_history))
 
-         acts_bundle = {"acts_bundle" : {"acts" : candidate_acts, "vote_history" : fetched_vote_history, "vote_limit": MAX_VOTES_PER_ROUND}}
+         acts_bundle = {"acts_bundle" : {"acts" : candidate_acts, "vote_history" : fetched_vote_history, "vote_limit": DefaultPolicyEngine.MAX_VOTES_PER_ROUND}}
          acts_bundle = json.dumps(acts_bundle)
 
          log("getActs({})".format((acts_bundle)))
@@ -171,7 +174,6 @@ def getEligibleActs() ->any:
          log("response data: {}".format(str(response.get_data())))
          log("response headers: {}".format(str(response.headers)))
          return response
-     
      except FrontendError as e:
          error = {"error" : str(e.response()[0])}    
          error = json.dumps(error)

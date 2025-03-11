@@ -57,4 +57,16 @@ class VoteCastError(FrontendError):
                    
      return ("error:vote not recorded. "+
          "act:{}".format(str(self.__act)),
+     500) 
+
+
+class VoteHistoryError(FrontendError):
+    def __init__(self, user, act):
+        self.__user = user
+        self.__act = act
+
+    def response(self) ->any:
+                   
+     return ("error:user not eligible to vote in this round. "+
+         "user: {}, act:{}".format(self.__user, str(self.__act)),
      500)     

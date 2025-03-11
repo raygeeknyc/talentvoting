@@ -71,12 +71,11 @@
           // This is the function that invokes Firebase auth and sets the view 
           const initAuth = (settings) => {
             try {
-              console.debug(settings);
+              console.debug('Settings: ', settings);
               initFirebaseAuth({
                 ...settings,
                 loggedIn: (user, token) => {
                   document.getElementById("application").innerHTML = settings.projectId;
-                  console.debug(user.email);
                   setView('#signed-in');
                 },
                 loggedOut: () => {
@@ -84,7 +83,7 @@
                 }
               });
             } catch (err)  {
-              console.log(err);
+              console.log('firebaseAuth error: ', err);
               $('#error').text(err.message).show();
             }
           }
@@ -93,7 +92,7 @@
           try {
                initAuth(window.firebaseAuthIdentifier);
           } catch (err) {
-            console.log(err);
+            console.log('Error authenticating: ', err);
           }
 
           // With everything setup, listen for clicks on the login and logout buttons
@@ -104,26 +103,24 @@
           firebase.auth().onAuthStateChanged(async function(user) {
              if (user) {
                  // User is signed in.
-                 console.log(firebase.auth().currentUser.uid);
-                 console.log(user.email);
                  document.getElementById("userName").innerHTML = user.email;
                  user.getIdToken().then((idToken) => {
-                 console.log(idToken);
                  document.getElementById("idToken").value=idToken;
                 });
-                console.log(new Date(). getTime()); 
+                console.log('Logged in', new Date().toLocaleString()); 
+                console.log('UID: ', firebase.auth().currentUser.uid);
+                console.log('e-mail: ', user.email);
              } else {
-                console.log('Not logged in');
-                console.log(new Date(). getTime()); 
+                console.log('Not logged in', new Date().toLocaleString()); 
                 document.getElementById("userName").innerHTML = '';
                 document.getElementById("idToken").value = '';
              }
             });
  
-           // Send a form to a remote service 
+           // Send a form to a remote service.
            // Pass the json response to a callback
            function getResponse(form, url, callback) {
-            console.log(url);
+            console.log('getResponse URL: ', url);
             fetch(url, {
               method: form.method,
               body: new FormData(form)
@@ -132,7 +129,7 @@
                if(response.ok) {  
                  response.json() 
                    .then(function(response) {
-                      console.log('response: ', new Date(). getTime(), ' ', response);
+                      console.log('response: ', response);
                       callback(response);
                   });
                  }
@@ -142,51 +139,47 @@
                }
              })
              .catch(function(error) {
-               console.log(error);
+               console.log('Error: ', error);
               });
           }
+
+          // Count all 'Y' votes in vote_history array and store that as our tally of votes
+          function countVoteHistory(vote_history) {
+            let vote_tally = 0;
+            for (let voteIdx = 0; voteIdx < vote_history.length; voteIdx++) {
+              if (vote_history[voteIdx] == 'Y') {
+                vote_tally = vote_tally+1;
+              }
+            }
+            document.getElementById('voteTally').value = vote_tally;
+          }
  
-          // Process the response from a remote "vote" call
-          // For now we just confirm the vote request going round trip
-          function checkVote(responseJson) {
-            console.log("checkVote", new Date(), responseJson);
+          // Process the response from a remote "vote" call.
+          // confirm to the user
+          // Update the act table to enforce the votebudget
+          function markVoteCast(responseJson) {
             const act = responseJson['act'];
             alert('you voted for ' + act + '!')
-            updateActs(act);
+            enforceBudgetForVote(act);
            }
 
-           // Handle the response from a remote "getActs" call
+           // Handle the response from a remote "getActs" call.
            // Load the acts into the HTML table
            // Add vote buttons for eligible acts
            // Add listeners for the vote buttons
            function setActs(responseJson) {
-            console.log("setActs", new Date(), responseJson);
             // Traversing the JSON data
             let bundle = responseJson['acts_bundle'];
             let acts = bundle['acts'];
             let vote_history = bundle['vote_history'];
             let vote_limit = bundle['vote_limit'];
             const actsTable = document.getElementById('actsTable');
-            console.log("acts data has ", acts.length, " rows");
-            console.log("acts data is ", acts);
-            console.log("history data is ", vote_history);
-            console.log("history has ", vote_history.length, " elements");
-            console.log("vote_limit data is ", vote_limit);
             document.getElementById('voteLimit').value = vote_limit;
-
-            // Count all 'Y' votes in vote_history and store that as our current tally of votes cast
-            let vote_tally = 0;
-            for (let voteIdx = 0; voteIdx < vote_history.length; voteIdx++) {
-              if (vote_history[voteIdx] == 'Y') {
-                console.log('tallied vote ', voteIdx)
-                vote_tally = vote_tally+1;
-              }
-            }
-            document.getElementById('voteTally').value = vote_tally;
-
+            countVoteHistory(vote_history);
+            emptyActsTableBody();
+            // Build a new table body with vote buttons for eligible acts
             const tBody = actsTable.getElementsByTagName('tbody')[0];
             for (let rowIdx = 0; rowIdx < acts.length; rowIdx++) {
-               console.log('Row: ', rowIdx, ' is "', acts[rowIdx]['name'], '"');
                let actRow = tBody.insertRow(-1)
                actRow.insertCell(0).innerHTML = acts[rowIdx]['name'];
                if (acts[rowIdx]['voting_eligible']) {
@@ -209,11 +202,10 @@
              }
            }
 
-           // If we have reached the limit on votes, disable all vote buttons.
-           // After a vote has been cast, it is not eligible for another vote
-           // Update the eligibility of each act in the acts table, based on the limit
-           // This duplicates knowledge in the Python policy engine, kept local for performance
-           function updateActs(voted_act) {
+           // This duplicates knowledge in the Python policy engine, kept local for performance.
+           // If we have reached the limit on votes, disable all vote buttons
+           // After a vote has been cast for an act, disable its vote button
+           function enforceBudgetForVote(voted_act) {
              let voted_count = parseInt(document.getElementById('voteTally').value);
              voted_count = voted_count + 1;
              document.getElementById('voteTally').value = voted_count;
@@ -222,10 +214,8 @@
              const rows = actsTable.rows
              for (let i = 0; i < rows.length; i++) {
                const row = rows[i];
-               console.log('row is ', row);
                if (i > 0) {  // The first row is a TH
                  const rowActId = row.cells[0].children[0].value;
-                 console.log(row.cells[0].textContent,'=',rowActId)
                  if (rowActId == voted_act || voted_count >= vote_limit) {
                   row.cells[1].innerHTML = '';  // Removes all children
                   row.cells[1].innerHTML = '--';
@@ -235,9 +225,8 @@
               }
            }
 
-
            // Remove any old acts from the table and setup a new, empty table body
-           function resetActsTable() {
+           function emptyActsTableBody() {
              var newTBody = document.createElement('tbody');
              newTBody.name = 'tbody';
              const actsTable = document.getElementById('actsTable');
@@ -247,15 +236,15 @@
             
            // Handle a Vote button click
            function vote(actId) {
-             console.log("Cast vote", new Date(). getTime(), " act '", actId, "'");
+             console.log("Cast vote", new Date().toLocaleString(), " act '", actId, "'");
              document.getElementById('votedAct').value = actId;
-             getResponse(document.getElementById('actsForm'), voteURL, checkVote); 
+             getResponse(document.getElementById('actsForm'), voteURL, markVoteCast); 
            }
 
            // Handle a GetActs button click
            function getActs() {
-            console.log("Get Acts", new Date(). getTime());
-            resetActsTable()
+            console.log("Get Acts", new Date().toLocaleString());
+            emptyActsTableBody()
             getResponse(document.getElementById('actsForm'), getActsURL, setActs);
            }
 

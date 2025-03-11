@@ -1,15 +1,16 @@
 import json
 from flask import Flask, request
-from talentvoting.common.policy.votingpolicyengine import MAX_VOTES_PER_ROUND, DefaultPolicyEngine
+from talentvoting.common.policy.votingpolicyengine import  DefaultPolicyEngine
 from talentvoting.cloud.common.votingdatabaseutils import get_database
 from talentvoting.common.acts import parseAct
 
 app = Flask(__name__)
 
 def __is_vote_in_budget(transaction, user_id, round_id, act_number):
-    """Return votes array if this user has remaining votes in their budget and has not voted for this act.
-    Insert a new Votebudget for this user and round if no Votebudget exists.
-    returns: Array of string if a Vote can be cast for this act, False otherwise
+    """
+    Get the voting history for the round if this user has remaining votes in their budget and has not voted for this act.
+    In a transaction, insert a new Votebudget for this user and round if no Votebudget exists.
+    Returns: Array of string if a Vote can be cast for this act, False otherwise
     """
 
     result_rows = transaction.execute_sql(
@@ -25,7 +26,7 @@ def __is_vote_in_budget(transaction, user_id, round_id, act_number):
         else:
             return False
     else:
-        new_votes = ['N','N','N','N','N','N','N','N','N','N','N','N']
+        new_votes = DefaultPolicyEngine.DEFAULT_VOTE_HISTORY
         print("creating votebudget for user {} round {}".format(user_id, round_id))
         print("new_votebudget: {}" .format(str(new_votes)))
         sql= "INSERT INTO Votebudget "+\
@@ -40,6 +41,7 @@ def __is_vote_in_budget(transaction, user_id, round_id, act_number):
         return new_votes
 
 def __update_vote(transaction, act_number, round_id):
+    "In a transaction, increment the votes for this act by 1."
     row_ct = transaction.execute_update(
         "UPDATE Votes "
         "SET Total = Total + 1 "
@@ -52,7 +54,7 @@ def __update_vote(transaction, act_number, round_id):
 
 def __update_votebudget(transaction, user_id, round_id, act_number, vote_budget):
     """
-    Update the vote history to show this act as voted for.
+    In a transaction, update the vote history to show this act as voted for.
     The vote history is 0 indexed, act numbers start at 1 so adjust the index into the history array.
     """
     vote_budget[act_number-1] = 'Y'
@@ -70,6 +72,7 @@ def __update_votebudget(transaction, user_id, round_id, act_number, vote_budget)
                          .format(len(row_ct), round_id, user_id))
 
 def _apply_vote_if_allowed(transaction, user_id, round_id, act_number):
+    "In a transaction, check the eligibility of this vote and update the votes and votebudget tables."
     vote_budget = __is_vote_in_budget(transaction, user_id, round_id, act_number)
     if not vote_budget:
         print("vote_budget: {}".format(vote_budget))
@@ -82,6 +85,7 @@ def _apply_vote_if_allowed(transaction, user_id, round_id, act_number):
 def _processVote(message:json) -> bool:
     """
     Process a JSON message containing a vote.
+    Create a transaction and update the database if the user and act are found in the message.
     args:
         message: A JSON dict
     Returns:
@@ -100,7 +104,10 @@ def _processVote(message:json) -> bool:
 
 @app.route("/", methods=["POST"])
 def index():
-    """Receive a Pub/Sub message which should contain valid JSON and issue HTTP response."""
+    """
+    Receive a Pub/Sub message which should contain JSON and issue an HTTP response.
+    Process the vote if the message contains valid JSON.
+    """
     message = request.data
    
     print("incoming message!")
