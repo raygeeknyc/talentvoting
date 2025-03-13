@@ -202,7 +202,8 @@
              }
            }
 
-           // This duplicates knowledge in the Python policy engine, kept local for performance.
+           // This duplicates knowledge in the Python policy engine,
+           // kept local for performance.
            // If we have reached the limit on votes, disable all vote buttons
            // After a vote has been cast for an act, disable its vote button
            function enforceBudgetForVote(voted_act) {
@@ -218,8 +219,7 @@
                  const rowActId = row.cells[0].children[0].value;
                  if (rowActId == voted_act || voted_count >= vote_limit) {
                   row.cells[1].innerHTML = '';  // Removes all children
-                  row.cells[1].innerHTML = '--';
-                  
+                  row.cells[1].innerHTML = '--';                  
                 }
                }
               }

@@ -5,8 +5,10 @@ from typing import List, Tuple
 from talentvoting.common.acts import Act, Acts, parseAct
 from talentvoting.common.policy.votingpolicyengine import DefaultPolicyEngine
 from talentvoting.common.interfaces.voteingester import VoteIngester
-from talentvoting.common.interfaces.responses import FrontendError, IneligibleVote, InvalidUser, InvalidLogin, MalformedRequest, VoteCastError, VoteHistoryError
-from talentvoting.common.interfaces.servicelocations import VOTE_WEB_CLIENT_DOMAIN, VOTE_QUEUE_TOPIC, PROJECT_ID
+from talentvoting.common.interfaces.responses import FrontendError, IneligibleVote,\
+      InvalidUser, InvalidLogin, MalformedRequest, VoteCastError, VoteHistoryError
+from talentvoting.common.interfaces.servicelocations import VOTE_WEB_CLIENT_DOMAIN, \
+    VOTE_QUEUE_TOPIC, PROJECT_ID
 from talentvoting.cloud.common.votingdatabaseutils import get_database
 
 import firebase_admin
@@ -25,16 +27,21 @@ publisher = pubsub_v1.PublisherClient()
 # Create a path to the votes topic
 topic_path = publisher.topic_path(PROJECT_ID, VOTE_QUEUE_TOPIC )
 
+
 def log(message:str):
      print(message, file=sys.stderr)
   
+
 def logError(e:Exception, payload:str):
-     print("Error: {}, Data: {}".format(str(e.__class__) + ":" + str(e), str(payload)), file=sys.stderr)
+     print("Error: {}, Data: {}".format(str(e.__class__) + ":" + str(e), str(payload)), 
+           file=sys.stderr)
   
+
 def _fixResponseHeaders(response):
     "Add needed headers to the response."
     response.headers['Access-Control-Allow-Origin'] = VOTE_WEB_CLIENT_DOMAIN
     response.headers['Content-Type'] = 'text/json'
+
 
 def _isUserLoggedIn(user) ->bool:
      "If the user is defined, we assume it to be a valid logged in user."
@@ -43,7 +50,9 @@ def _isUserLoggedIn(user) ->bool:
      else:
          return False
 
-def __getUserVoteHistory(db_connection, user_id:str, round_id:int)->Tuple[int,List[str]]:
+
+def __getUserVoteHistory(db_connection, \
+                         user_id:str, round_id:int)->Tuple[int,List[str]]:
     "Return the array of voting history for this user in this round."
     result_rows = db_connection.execute_sql(
         "SELECT Total_votes_cast, voted_acts from Votebudget "+
@@ -59,8 +68,9 @@ def __getUserVoteHistory(db_connection, user_id:str, round_id:int)->Tuple[int,Li
 
     return (prev_total, prev_votes)
 
+
 def _getActs(vote_history:List[str]) ->Acts:
-     "Return the current JSON map of acts, each marked as eligible or not eligible for voting."
+     "Return the current JSON map of acts, marked as eligible or not for voting."
      acts = DefaultPolicyEngine.getAllActs()
      for act in acts:
          round_id, act_number = parseAct(act["act"])
@@ -94,7 +104,8 @@ def __validateUser(form) -> str:
          raise e
      except auth.InvalidIdTokenError:
          raise InvalidLogin(str(id_token))
-     
+
+
 def _recordVote(act:Act) ->any:
      "Publish the vote to the Pub/Sub topic."
      try:
@@ -107,10 +118,12 @@ def _recordVote(act:Act) ->any:
          logError(e, "_recordVote()")
          raise VoteCastError(str(act))
 
+
 @app.route('/', methods=['POST','GET'])
 def root():
      log("root {}".format(request.method))
      return "<html><body>voting front end service</body></html>"
+
 
 @app.route('/vote', methods=['POST'])
 def vote():
@@ -158,14 +171,19 @@ def getEligibleActs() ->any:
          vote_history = []
          round_id = DefaultPolicyEngine.getCurrentRoundId()
          with get_database().snapshot() as db_connection:
-             _, fetched_vote_history = __getUserVoteHistory(db_connection, uid, round_id)
+             _, fetched_vote_history = __getUserVoteHistory(db_connection, 
+                                                            uid, round_id)
          if fetched_vote_history == None:
              raise VoteHistoryError(uid, round_id)
          candidate_acts = _getActs(fetched_vote_history)
 
          log("fetched_vote_history: {}".format(fetched_vote_history))
 
-         acts_bundle = {"acts_bundle" : {"acts" : candidate_acts, "vote_history" : fetched_vote_history, "vote_limit": DefaultPolicyEngine.MAX_VOTES_PER_ROUND}}
+         acts_bundle = {
+             "acts_bundle" : {"acts" : candidate_acts,
+                              "vote_history" : fetched_vote_history,
+                              "vote_limit": DefaultPolicyEngine.MAX_VOTES_PER_ROUND}
+                              }
          acts_bundle = json.dumps(acts_bundle)
 
          log("getActs({})".format((acts_bundle)))

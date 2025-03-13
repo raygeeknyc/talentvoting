@@ -1,6 +1,7 @@
 from talentvoting.common.acts import Act, Acts, exampleActs, parseAct
 from typing import List
 
+
 class VotingPolicyEngine(object):
     "This is meant to be used through its provided instance (see bottom of file)."
     MAX_VOTES_PER_ROUND = 6
@@ -20,10 +21,12 @@ class VotingPolicyEngine(object):
         return parseAct(first_act)[0]
     
     @staticmethod
-    def isEligibleVote(round_id:int, act_number:int, prev_votes:List[str]) ->bool:
+    def isEligibleVote(round_id:int, act_number:int,
+                        prev_votes:List[str]) ->bool:
         """"
         Determine if this vote is within the vote budget.
-        The vote history is 0 indexed, act numbers start at 1 so adjust the index into the history array.
+        The vote history is 0 indexed, act numbers start at 1 so adjust the index 
+        into the history array.
         """
 
         if not round_id or not act_number or not prev_votes:
@@ -35,5 +38,6 @@ class VotingPolicyEngine(object):
             return False
         return True
     
+
 # Provide a singleton for clients to use
 DefaultPolicyEngine = VotingPolicyEngine()

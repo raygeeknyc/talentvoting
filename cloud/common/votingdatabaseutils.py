@@ -1,5 +1,6 @@
 from google.cloud import spanner
-from talentvoting.common.interfaces.servicelocations import SPANNER_INSTANCE, SPANNER_DATABASE
+from talentvoting.common.interfaces.servicelocations import SPANNER_INSTANCE, \
+    SPANNER_DATABASE
 
 def get_database():
     "Create a database connection."
