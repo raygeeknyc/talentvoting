@@ -201,3 +201,38 @@ def getEligibleActs() ->any:
          log("response data: {}".format(str(response.get_data())))
          log("response headers: {}".format(str(response.headers)))
          return response
+     
+
+@app.route('/getPolicyEngine', methods=['POST'])
+def getClientPolicyEngine() ->any:
+     "Request handler for getPolicyEngine endpoint."
+     try:
+         form = request.form
+         uid = __validateUser(form)
+         clientLanguage = form['clientLanguage']
+         log("getPolicyEngine({})".format(clientLanguage))
+         client_policy_engine = ''
+         response = make_response(client_policy_engine, 200)
+         _fixResponseHeaders(response)
+         response.headers['Content-Type'] = 'text/{}}'.format(clientLanguage)
+         log("response data: {}".format(str(response.get_data())))
+         log("response headers: {}".format(str(response.headers)))
+         return response
+     except FrontendError as e:
+         error = {"error" : str(e.response()[0])}    
+         error = json.dumps(error)
+         logError(error, "error:getActs()")
+         response = make_response(error, e.response()[1])
+         _fixResponseHeaders(response)
+         log("response data: {}".format(str(response.get_data())))
+         log("response headers: {}".format(str(response.headers)))
+         return response
+     except Exception as e:
+         error = {"Exception" : str(e)}    
+         error = json.dumps(error)
+         logError(error, "error:getPolicyEngine()")
+         response = make_response(error, error.response()[1])
+         _fixResponseHeaders(response)
+         log("response data: {}".format(str(response.get_data())))
+         log("response headers: {}".format(str(response.headers)))
+         return response
