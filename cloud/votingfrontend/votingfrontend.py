@@ -143,10 +143,11 @@ def vote():
          log("response headers: {}".format(str(response.headers)))
          return response
      except BadRequestKeyError:
-         error = {"error" : str(MalformedRequest("votedAct").response()[0])}    
+         excp = MalformedRequest("votedAct")   
+         error = {"error" : str(excp.response()[0])}    
          error = json.dumps(error)
          logError(error, "error:vote()")
-         response = make_response(error, error.response()[1])
+         response = make_response(error, excp.response()[1])
          _fixResponseHeaders(response)
          log("response data: {}".format(str(response.get_data())))
          log("response headers: {}".format(str(response.headers)))
@@ -218,20 +219,21 @@ def getClientPolicyEngine() ->any:
          log("response data: {}".format(str(response.get_data())))
          log("response headers: {}".format(str(response.headers)))
          return response
+     except BadRequestKeyError:
+         excp = MalformedRequest("clientLanguage")   
+         error = {"error" : str(excp.response()[0])}    
+         error = json.dumps(error)
+         logError(error, "error:getPolicyEngine()")
+         response = make_response(error, excp.response()[1])
+         _fixResponseHeaders(response)
+         log("response data: {}".format(str(response.get_data())))
+         log("response headers: {}".format(str(response.headers)))
+         return response
      except FrontendError as e:
          error = {"error" : str(e.response()[0])}    
          error = json.dumps(error)
          logError(error, "error:getActs()")
          response = make_response(error, e.response()[1])
-         _fixResponseHeaders(response)
-         log("response data: {}".format(str(response.get_data())))
-         log("response headers: {}".format(str(response.headers)))
-         return response
-     except Exception as e:
-         error = {"Exception" : str(e)}    
-         error = json.dumps(error)
-         logError(error, "error:getPolicyEngine()")
-         response = make_response(error, error.response()[1])
          _fixResponseHeaders(response)
          log("response data: {}".format(str(response.get_data())))
          log("response headers: {}".format(str(response.headers)))
