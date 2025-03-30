@@ -32,7 +32,6 @@
               method="post">
               <hr/>
               <input type="hidden" id="votedAct" name="votedAct" />
-              <input type="button" id="actsButton" name="actsButton" value="Get Acts" />              
               <table align="center" id="actsTable" border="1">
                 <thead>
                   <TR><TH>Name</TH><TH>--</TH></TR>
@@ -107,6 +106,7 @@
                  document.getElementById("userName").innerHTML = user.email;
                  user.getIdToken().then((idToken) => {
                  document.getElementById("idToken").value=idToken;
+                 getActs();
                  fetchPolicyEngine();
                 });
                 console.log('Logged in', new Date().toLocaleString()); 
@@ -252,9 +252,6 @@
            function loginErrorCallback() {
             console.error('error logging in');
            }
-
-           // Listen for clicks on the Get Acts button 
-           $('#actsButton').click(() => getActs());
          </script>
     </body>
 </html>
