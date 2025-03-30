@@ -26,7 +26,25 @@ class VotingPolicyEngine(object):
         Return the Javascript source for a policuy rules enforcement function
         to be used as a client-side equivalent of isEligibleVote(...) in this class.
         """
-        return 
+        return """ 
+        // If we have reached the limit on votes, disable all vote buttons
+        // After a vote has been cast for an act, disable its vote button
+        console.log(voted_act, vote_tally_element, vote_limit, acts_table); // required method signature
+        let voted_count = parseInt(vote_tally_element.value);
+        voted_count = voted_count + 1;
+        vote_tally_element.value = voted_count;
+        const rows = acts_table.rows
+        for (let i = 0; i < rows.length; i++) {
+             const row = rows[i];
+             if (i > 0) {  // The first row is a TH
+                 const rowActId = row.cells[0].children[0].value;
+                 if (rowActId == voted_act || voted_count >= vote_limit) {
+                     row.cells[1].innerHTML = '';  // Removes all children
+                     row.cells[1].innerHTML = '--';                  
+                 }
+             }
+         }
+             """
 
 
     @staticmethod

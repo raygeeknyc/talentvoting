@@ -159,23 +159,25 @@
           // Process the response from remote fetchPolicyEngine call.
           // log it for now
           function setPolicyEngine(responseJson) {
-            const function_name = 'isEligibleVote';
+            const function_name = 'updateEligibleVotes';
             let function_body = responseJson['src'];
             // function_body = function_body + "return " + function_name;
             console.log("Policy engine language: ", responseJson['language']);
             console.log("Policy engine src: ", function_body);
 
-            window[function_name] = Function("a1", "a2", "a3", "a4", function_body);
+            // The following arg list must match the function downloaded from the server
+            window[function_name] = Function('voted_act', 'vote_tally_element', 'vote_limit', 'acts_table' , function_body);
             console.log("Policy engine installed: ");
           }
 
           // Process the response from a remote "vote" call.
           // confirm to the user
-          // Update the act table to enforce the votebudget
+          // Call the voting policy engine downloaded from the server to 
+          // update the act table to enforce the votebudget
           function markVoteCast(responseJson) {
             const act = responseJson['act'];
             alert('you voted for ' + act + '!')
-            enforceBudgetForVote(act, document.getElementById('voteTally'), document.getElementById('voteLimit').value,
+            updateEligibleVotes(act, document.getElementById('voteTally'), document.getElementById('voteLimit').value,
               document.getElementById('actsTable'));
            }
 
@@ -216,28 +218,6 @@
                hiddenInput.value = acts[rowIdx]['act'];
                actRow.cells[0].appendChild(hiddenInput);
              }
-           }
-
-           // This duplicates knowledge in the Python policy engine,
-           // kept local for performance.
-           // If we have reached the limit on votes, disable all vote buttons
-           // After a vote has been cast for an act, disable its vote button
-           function enforceBudgetForVote(voted_act, vote_tally_element, vote_limit, actsTable) {
-             let voted_count = parseInt(vote_tally_element.value);
-             voted_count = voted_count + 1;
-             vote_tally_element.value = voted_count;
-             isEligibleVote(1,2,3,4);  // The function installed by setPolicyEngine()
-             const rows = actsTable.rows
-             for (let i = 0; i < rows.length; i++) {
-               const row = rows[i];
-               if (i > 0) {  // The first row is a TH
-                 const rowActId = row.cells[0].children[0].value;
-                 if (rowActId == voted_act || voted_count >= vote_limit) {
-                  row.cells[1].innerHTML = '';  // Removes all children
-                  row.cells[1].innerHTML = '--';                  
-                }
-               }
-              }
            }
 
            // Remove any old acts from the table and setup a new, empty table body
