@@ -43,6 +43,7 @@
               </table>
               <!-- When a login completes this gets set for the remote service -->
               <input id="idToken" type="hidden" name="idToken" />
+              <input id="clientLanguage" type="hidden" name="clientLanguage" value="javascript" />
           </form>
         </section>
         <!-- If no user is logged in, all you can do is login -->
@@ -157,8 +158,15 @@
  
           // Process the response from remote fetchPolicyEngine call.
           // log it for now
-          function setPolicyEngine(response) {
-            console.log("Policy engine: ", response);
+          function setPolicyEngine(responseJson) {
+            const function_name = 'isEligibleVote';
+            let function_body = responseJson['src'];
+            // function_body = function_body + "return " + function_name;
+            console.log("Policy engine language: ", responseJson['language']);
+            console.log("Policy engine src: ", function_body);
+
+            window[function_name] = Function("a1", "a2", "a3", "a4", function_body);
+            console.log("Policy engine installed: ");
           }
 
           // Process the response from a remote "vote" call.
@@ -218,6 +226,7 @@
              let voted_count = parseInt(vote_tally_element.value);
              voted_count = voted_count + 1;
              vote_tally_element.value = voted_count;
+             isEligibleVote(1,2,3,4);  // The function installed by setPolicyEngine()
              const rows = actsTable.rows
              for (let i = 0; i < rows.length; i++) {
                const row = rows[i];

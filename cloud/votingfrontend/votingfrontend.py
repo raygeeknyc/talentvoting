@@ -212,10 +212,11 @@ def getClientPolicyEngine() ->any:
          uid = __validateUser(form)
          clientLanguage = form['clientLanguage']
          log("getPolicyEngine({})".format(clientLanguage))
-         client_policy_engine = ''
+         src = 'console.log("isEligibleVote(", a1, a2, a3, a4, ")"); console.log("dummy func");'
+         client_policy_engine = {"language": clientLanguage, "src": src}
+         client_policy_engine = json.dumps(client_policy_engine)
          response = make_response(client_policy_engine, 200)
          _fixResponseHeaders(response)
-         response.headers['Content-Type'] = 'text/{}}'.format(clientLanguage)
          log("response data: {}".format(str(response.get_data())))
          log("response headers: {}".format(str(response.headers)))
          return response
