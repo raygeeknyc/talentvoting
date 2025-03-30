@@ -160,7 +160,8 @@
           function markVoteCast(responseJson) {
             const act = responseJson['act'];
             alert('you voted for ' + act + '!')
-            enforceBudgetForVote(act);
+            enforceBudgetForVote(act, document.getElementById('voteTally'), document.getElementById('voteLimit').value,
+              document.getElementById('actsTable'));
            }
 
            // Handle the response from a remote "getActs" call.
@@ -206,12 +207,10 @@
            // kept local for performance.
            // If we have reached the limit on votes, disable all vote buttons
            // After a vote has been cast for an act, disable its vote button
-           function enforceBudgetForVote(voted_act) {
-             let voted_count = parseInt(document.getElementById('voteTally').value);
+           function enforceBudgetForVote(voted_act, vote_tally_element, vote_limit, actsTable) {
+             let voted_count = parseInt(vote_tally_element.value);
              voted_count = voted_count + 1;
-             document.getElementById('voteTally').value = voted_count;
-             let vote_limit = document.getElementById('voteLimit').value;
-             const actsTable = document.getElementById('actsTable');
+             vote_tally_element.value = voted_count;
              const rows = actsTable.rows
              for (let i = 0; i < rows.length; i++) {
                const row = rows[i];

@@ -19,7 +19,16 @@ class VotingPolicyEngine(object):
         "Parse out the round_id from the first act in the current round."
         first_act = self._acts[0]["act"]
         return parseAct(first_act)[0]
-    
+
+    @staticmethod
+    def getClientJSVotePolicyImpl() ->str:
+        """
+        Return the Javascript source for a policuy rules enforcement function
+        to be used as a client-side equivalent of isEligibleVote(...) in this class.
+        """
+        return 
+
+
     @staticmethod
     def isEligibleVote(round_id:int, act_number:int,
                         prev_votes:List[str]) ->bool:
