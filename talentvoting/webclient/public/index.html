@@ -118,7 +118,7 @@
                 document.getElementById("idToken").value = '';
              }
             });
- 
+
            // Send a form to a remote service.
            // Pass the json response to a callback
            function getResponse(form, url, callback) {
@@ -155,7 +155,7 @@
             }
             document.getElementById('voteTally').value = vote_tally;
           }
- 
+
           // Process the response from remote fetchPolicyEngine call.
           // log it for now
           function setPolicyEngine(responseJson) {
@@ -228,7 +228,7 @@
              const tBody = actsTable.getElementsByTagName('tbody')[0];
              tBody.replaceWith(newTBody);
            }
-            
+
            // Fetch the policy engine implementation
            function fetchPolicyEngine() {
             console.log("Fetch policy", new Date().toLocaleString());
