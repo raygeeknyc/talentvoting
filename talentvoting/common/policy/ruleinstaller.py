@@ -13,8 +13,9 @@ update_eligible_votes(1,2)
 
 """
 def install_policy_engine_rules(function_body, arg_list:List[str]=[""], 
-    function_name:str=POLICY_RULE_NAME):
+    function_name:str=POLICY_RULE_NAME)->function:
     """
+    install_policy_engine_rules(function_body, arg_list, function_name)
     Creates a policy rules validation function from the function_body
     with the arg_list parameters
 
